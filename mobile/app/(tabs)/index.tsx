@@ -1,16 +1,17 @@
 import { useCallback, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
+import { CircleCheck, Play, RefreshCw, Settings, Users, type LucideIcon } from 'lucide-react-native'
 import type { YoutubeStatusResponse } from '@shared/types'
 import { api, syncErrorMessage } from '@/lib/api'
 import { useYoutubeConnect } from '@/lib/use-youtube-connect'
-import { Banner, Button, Card, Loading } from '@/components/ui'
-import { radii, theme } from '@/lib/theme'
+import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, LoadingText } from '@/components/ui'
+import { makeStyles, useTheme } from '@/lib/theme'
 
 // Web'deki components/dashboard-content.tsx karşılığı.
 export default function DashboardScreen() {
+  const { colors } = useTheme()
+  const s = useStyles()
   const [status, setStatus] = useState<YoutubeStatusResponse | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -53,82 +54,104 @@ export default function DashboardScreen() {
     setRefreshing(false)
   }
 
-  if (!status) return error ? <SafeAreaView style={styles.screen}><View style={styles.content}><Banner message={error} /></View></SafeAreaView> : <Loading />
+  if (!status && !error) return <LoadingText />
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}>
-        <Banner message={error || youtube.error} />
-        <Banner message={success} tone="success" />
+    <ScrollView
+      style={s.screen}
+      contentContainerStyle={s.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.mutedForeground} colors={[colors.foreground]} progressBackgroundColor={colors.card} />}
+    >
+      <Alert message={error || youtube.error} />
+      <Alert message={success} variant="success" />
 
-        {!status.connected ? (
-          <Card style={styles.connectCard}>
-            <Text style={styles.connectTitle}>Connect Your YouTube</Text>
-            <Text style={styles.muted}>Connect your YouTube account to access your subscriptions and videos</Text>
-            <Button label="Connect YouTube" icon="logo-youtube" onPress={youtube.connect} loading={youtube.connecting} />
-          </Card>
-        ) : (
-          <>
-            <View>
-              <Text style={styles.title}>Dashboard</Text>
-              <Text style={styles.muted}>Welcome to your private video feed</Text>
-            </View>
-            <Button label={syncing ? 'Syncing...' : 'Sync Now'} icon="refresh" variant="secondary" onPress={syncVideos} loading={syncing} />
+      {!status ? null : !status.connected ? (
+        <Card>
+          <CardHeader style={s.center}>
+            <CardTitle style={s.connectTitle}>Connect Your YouTube</CardTitle>
+            <CardDescription style={s.centerText}>Connect your YouTube account to access your subscriptions and videos</CardDescription>
+          </CardHeader>
+          <CardContent style={s.center}>
+            <Button label="Connect YouTube" icon={Play} size="lg" onPress={youtube.connect} loading={youtube.connecting} />
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <View style={s.heading}>
+            <Text style={s.title}>Dashboard</Text>
+            <Text style={s.muted}>Welcome to your private video feed</Text>
+          </View>
+          <Button label={syncing ? 'Syncing...' : 'Sync Now'} icon={RefreshCw} iconSpin={syncing} variant="outline" onPress={syncVideos} disabled={syncing} />
 
-            <View style={styles.stats}>
-              <StatCard icon="play" label="Videos" value={status.video_count} caption="videos in your feed" onPress={() => router.navigate('/videos')} />
-              <StatCard icon="people" label="Subscriptions" value={status.subscription_count} caption="channels followed" onPress={() => router.navigate('/subscriptions')} />
-            </View>
+          <View style={s.grid}>
+            <StatCard title="Videos" icon={Play} value={status.video_count} caption="videos in your feed" onPress={() => router.navigate('/videos')} />
+            <StatCard title="Subscriptions" icon={Users} value={status.subscription_count} caption="channels followed" onPress={() => router.navigate('/subscriptions')} />
+            <StatCard title="Settings" icon={Settings} caption="Manage your account and preferences" onPress={() => router.navigate('/settings')} />
+          </View>
 
-            {status.video_count === 0 && status.subscription_count === 0 ? (
-              <Card style={styles.dashed}>
-                <Text style={styles.cardTitle}>Ready to Sync</Text>
-                <Text style={styles.muted}>Your YouTube account is connected. Tap the button below to fetch your subscriptions and videos.</Text>
-                <Button label={syncing ? 'Syncing...' : 'Sync My YouTube'} icon="refresh" onPress={syncVideos} loading={syncing} />
-              </Card>
-            ) : (
-              <Card>
-                <View style={styles.row}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.success} />
-                  <Text style={styles.cardTitle}>YouTube Connected</Text>
-                </View>
-                <Text style={styles.muted}>Your YouTube account is connected and syncing.{'\n'}Pull down on the Videos tab to refresh your feed.</Text>
-              </Card>
-            )}
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          {status.video_count === 0 && status.subscription_count === 0 ? (
+            <Card style={s.dashed}>
+              <CardHeader style={s.center}>
+                <CardTitle style={s.cardTitle}>Ready to Sync</CardTitle>
+                <CardDescription style={s.centerText}>Your YouTube account is connected. Tap the button below to fetch your subscriptions and videos.</CardDescription>
+              </CardHeader>
+              <CardContent style={s.center}>
+                <Button label={syncing ? 'Syncing...' : 'Sync My YouTube'} icon={RefreshCw} iconSpin={syncing} size="lg" onPress={syncVideos} disabled={syncing} />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader style={s.row}>
+                <CircleCheck size={20} color={colors.success} />
+                <CardTitle style={s.cardTitle}>YouTube Connected</CardTitle>
+              </CardHeader>
+              <CardContent style={s.gap}>
+                <Text style={s.small}>Your YouTube account is connected and syncing.</Text>
+                <Text style={s.small}>Pull down on the Videos page to refresh your feed.</Text>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </ScrollView>
   )
 }
 
-function StatCard({ icon, label, value, caption, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: number; caption: string; onPress: () => void }) {
+function StatCard({ title, icon: Icon, value, caption, onPress }: { title: string; icon: LucideIcon; value?: number; caption: string; onPress: () => void }) {
+  const { colors } = useTheme()
+  const s = useStyles()
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.stat, pressed && { opacity: 0.8 }]}>
-      <View style={styles.statHeader}>
-        <Text style={styles.statLabel}>{label}</Text>
-        <Ionicons name={icon} size={18} color={theme.muted} />
-      </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statCaption}>{caption}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && { opacity: 0.7 }}>
+      <Card style={s.statCard}>
+        <CardHeader style={s.statHeader}>
+          <CardTitle style={s.cardTitle}>{title}</CardTitle>
+          <Icon size={20} color={colors.mutedForeground} />
+        </CardHeader>
+        <CardContent>
+          {value !== undefined ? <Text style={s.statValue}>{value}</Text> : null}
+          <Text style={s.small}>{caption}</Text>
+        </CardContent>
+      </Card>
     </Pressable>
   )
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.bg },
-  content: { padding: 16, gap: 16 },
-  title: { color: theme.text, fontSize: 26, fontWeight: '800' },
-  muted: { color: theme.muted, fontSize: 14, lineHeight: 20 },
-  connectCard: { alignItems: 'stretch', marginTop: 40 },
-  connectTitle: { color: theme.text, fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  stats: { flexDirection: 'row', gap: 12 },
-  stat: { flex: 1, backgroundColor: theme.surface, borderRadius: radii.card, padding: 16 },
-  statHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statLabel: { color: theme.text, fontSize: 15, fontWeight: '700' },
-  statValue: { color: theme.text, fontSize: 30, fontWeight: '800', marginTop: 10 },
-  statCaption: { color: theme.muted, fontSize: 12 },
-  dashed: { borderWidth: 2, borderStyle: 'dashed', borderColor: theme.border, backgroundColor: 'transparent' },
-  cardTitle: { color: theme.text, fontSize: 17, fontWeight: '700' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-})
+const useStyles = makeStyles((c) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.background },
+  content: { paddingHorizontal: 16, paddingVertical: 24, gap: 16 },
+  center: { alignItems: 'center' },
+  centerText: { textAlign: 'center' },
+  connectTitle: { fontSize: 24 },
+  heading: { gap: 2 },
+  title: { color: c.foreground, fontSize: 24, fontWeight: '700' },
+  muted: { color: c.mutedForeground, fontSize: 14 },
+  grid: { gap: 12 },
+  statCard: { gap: 0 },
+  statHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
+  statValue: { color: c.foreground, fontSize: 30, fontWeight: '700' },
+  cardTitle: { fontSize: 18 },
+  small: { color: c.mutedForeground, fontSize: 14, lineHeight: 20 },
+  dashed: { borderStyle: 'dashed', borderWidth: 2 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  gap: { gap: 8 },
+}))

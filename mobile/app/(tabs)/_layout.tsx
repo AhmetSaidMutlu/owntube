@@ -1,29 +1,19 @@
 import { Tabs } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-import { theme } from '@/lib/theme'
+import { TopNav, type TabName } from '@/components/TopNav'
+import { useTheme } from '@/lib/theme'
 
-// Web'deki components/navbar.tsx sekmeleriyle aynı: Home, Videos, Subs, Settings.
-const icons = {
-  index: 'home',
-  videos: 'play-circle',
-  subscriptions: 'people',
-  settings: 'settings',
-} as const
-
+// Web'deki components/navbar.tsx gibi sekmeler ekranın üstünde durur.
 export default function TabsLayout() {
+  const { colors } = useTheme()
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        sceneStyle: { backgroundColor: theme.bg },
-        tabBarActiveTintColor: theme.text,
-        tabBarInactiveTintColor: theme.subtle,
-        tabBarStyle: { backgroundColor: theme.bg, borderTopColor: theme.border },
-        tabBarIcon: ({ color, size, focused }) => {
-          const name = icons[route.name as keyof typeof icons]
-          return <Ionicons name={focused ? name : `${name}-outline`} color={color as string} size={size} />
-        },
-      })}
+      tabBar={({ state, navigation }) => (
+        <TopNav
+          active={state.routes[state.index]?.name as TabName}
+          onNavigate={(name) => navigation.navigate(name)}
+        />
+      )}
+      screenOptions={{ headerShown: false, tabBarPosition: 'top', sceneStyle: { backgroundColor: colors.background } }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="videos" options={{ title: 'Videos' }} />

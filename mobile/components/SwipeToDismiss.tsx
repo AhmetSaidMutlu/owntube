@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Animated, PanResponder, StyleSheet, Text, View } from 'react-native'
-import { theme } from '@/lib/theme'
 
 const SWIPE_THRESHOLD = 80
 const DIRECTION_LOCK_PX = 8
@@ -36,8 +35,8 @@ export function SwipeToDismiss({ children, onDismiss }: { children: ReactNode; o
   return (
     <View>
       <View style={styles.hint} pointerEvents="none">
-        <Text style={[styles.hintText, direction !== 'right' && styles.hidden]}>✕ Not interested</Text>
-        <Text style={[styles.hintText, direction !== 'left' && styles.hidden]}>Not interested ✕</Text>
+        <Text style={[styles.hintText, direction !== 'right' && styles.hidden]}>✕ İlgilenmiyorum</Text>
+        <Text style={[styles.hintText, direction !== 'left' && styles.hidden]}>İlgilenmiyorum ✕</Text>
       </View>
       <Animated.View style={{ transform: [{ translateX }], opacity }} {...responder.panHandlers}>
         {children}
@@ -48,6 +47,6 @@ export function SwipeToDismiss({ children, onDismiss }: { children: ReactNode; o
 
 const styles = StyleSheet.create({
   hint: { ...StyleSheet.absoluteFill, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-  hintText: { color: theme.danger, fontSize: 13, fontWeight: '600' },
+  hintText: { color: '#ff6467', fontSize: 12, fontWeight: '500' },
   hidden: { opacity: 0 },
 })

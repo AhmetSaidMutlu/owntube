@@ -3,6 +3,7 @@ import type {
   MarkWatchedResponse,
   SubscriptionsResponse,
   SyncResponse,
+  UnsubscribeResponse,
   VideoResponse,
   VideosResponse,
   YoutubeStatusResponse,
@@ -10,9 +11,10 @@ import type {
 import { WATCHED_PERCENTAGE } from '@shared/feed'
 import { authClient } from './auth-client'
 import { API_URL, IS_WEB } from './config'
+import { fetchWithTimeout } from './http'
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(message: string, readonly status: number, readonly code?: string) {
     super(message)
   }
 }
@@ -21,13 +23,13 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   // Tarayıcı çerezi kendisi gönderir; native'de çerez SecureStore'dan elle eklenir.
   const cookie = IS_WEB ? null : await authClient.getCookie()
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetchWithTimeout(`${API_URL}${path}`, {
     ...init,
     credentials: IS_WEB ? 'include' : 'omit',
     headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
   })
   const data = await response.json().catch(() => null)
-  if (!response.ok) throw new ApiError(data?.error ?? `Request failed (${response.status})`, response.status)
+  if (!response.ok) throw new ApiError(data?.error ?? `Request failed (${response.status})`, response.status, data?.code)
   return data as T
 }
 
@@ -38,6 +40,9 @@ export const api = {
   videos: (limit: number, offset: number) => request<VideosResponse>(`/api/videos?limit=${limit}&offset=${offset}`),
   video: (videoId: string) => request<VideoResponse>(`/api/videos/${encodeURIComponent(videoId)}`),
   channel: (channelId: string) => request<ChannelResponse>(`/api/channel/${encodeURIComponent(channelId)}`),
+  /** Kanalı YouTube'da takipten çıkarır ve kanala ait videoları veritabanından siler. */
+  unsubscribeChannel: (channelId: string) =>
+    request<UnsubscribeResponse>(`/api/channel/${encodeURIComponent(channelId)}`, { method: 'DELETE' }),
   subscriptions: () => request<SubscriptionsResponse>('/api/subscriptions'),
   setSubscriptionActive: (channelId: string, isActive: boolean) =>
     request<{ success: true }>('/api/subscriptions', { method: 'PATCH', body: JSON.stringify({ channelId, isActive }) }),

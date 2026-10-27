@@ -3,17 +3,16 @@
     "name": "OwnTube",
     "slug": "owntube",
     "scheme": "owntube",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0f0f0f",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.owntube.app",
       "supportsTablet": true
     },
     "android": {
       "package": "com.owntube.app",
-      "edgeToEdgeEnabled": true
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",

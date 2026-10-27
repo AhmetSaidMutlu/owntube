@@ -17,3 +17,4 @@ export type SubscriptionsResponse = { subscriptions: Subscription[] }
 export type YoutubeStatusResponse = { connected: boolean; video_count: number; subscription_count: number }
 export type SyncResponse = { success: true; videos_synced: number; subscriptions_count: number }
 export type MarkWatchedResponse = { success: true; marked_watched: boolean }
+export type UnsubscribeResponse = { success: true; videos_deleted: number; youtube_unsubscribed: boolean }

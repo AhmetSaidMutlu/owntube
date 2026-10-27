@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { RefreshCw, Video } from 'lucide-react-native'
 import { smartSort } from '@shared/feed'
 import { api, syncErrorMessage } from '@/lib/api'
 import { dismissedVideoIds, onVideoWatched } from '@/lib/watched-store'
 import { VideoCard, type FeedVideo } from '@/components/VideoCard'
 import { SwipeToDismiss } from '@/components/SwipeToDismiss'
-import { Banner, EmptyState, Loading } from '@/components/ui'
-import { radii, theme } from '@/lib/theme'
+import { Alert, Empty, Skeleton, Spin } from '@/components/ui'
+import { makeStyles, radius, useTheme } from '@/lib/theme'
 
 const PAGE_SIZE = 20
+const FILTERS = ['All', 'Gaming', 'Music', 'News', 'Live', 'Tech', 'Sports']
 
 // Web'deki app/(protected)/videos/page.tsx karşılığı: akıllı sıralama, sonsuz kaydırma,
 // aşağı çekerek yenileme, kaydırarak gizleme.
 export default function VideosScreen() {
+  const { colors } = useTheme()
+  const s = useStyles()
   const [videos, setVideos] = useState<FeedVideo[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState('')
+  const [activeFilter, setActiveFilter] = useState('all')
 
   const pageRef = useRef(0)
   const hasMoreRef = useRef(true)
@@ -36,7 +39,7 @@ export default function VideosScreen() {
   const loadThumbs = useCallback(async () => {
     const { subscriptions } = await api.subscriptions()
     const map: Record<string, string> = {}
-    for (const s of subscriptions) if (s.channelThumbnail) map[s.channelId] = s.channelThumbnail
+    for (const sub of subscriptions) if (sub.channelThumbnail) map[sub.channelId] = sub.channelThumbnail
     thumbsRef.current = map
   }, [])
 
@@ -106,34 +109,58 @@ export default function VideosScreen() {
   }, [setVideosSynced])
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Videos</Text>
-        <Pressable onPress={onSync} disabled={syncing} style={({ pressed }) => [styles.sync, (pressed || syncing) && { opacity: 0.6 }]}>
-          {syncing ? <ActivityIndicator size="small" color={theme.text} /> : <Ionicons name="refresh" size={16} color={theme.text} />}
-          <Text style={styles.syncText}>{syncing ? 'Syncing…' : 'Sync'}</Text>
+    <View style={s.screen}>
+      {/* Filtre çubuğu + Sync düğmesi */}
+      <View style={s.filterBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters} style={s.flex}>
+          {FILTERS.map((filter) => {
+            const active = activeFilter === filter.toLowerCase()
+            return (
+              <Pressable key={filter} onPress={() => setActiveFilter(filter.toLowerCase())} style={[s.chip, active && s.chipActive]}>
+                <Text style={[s.chipText, active && s.chipTextActive]}>{filter}</Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
+        <Pressable onPress={onSync} disabled={syncing || refreshing} style={({ pressed }) => [s.sync, (pressed || syncing) && { opacity: 0.5 }]} accessibilityLabel="Sync latest videos from YouTube">
+          <Spin icon={RefreshCw} size={14} color={colors.foreground} spinning={syncing} />
         </Pressable>
       </View>
 
-      {loading ? <Loading /> : (
+      {loading ? (
+        <ScrollView contentContainerStyle={s.list} scrollEnabled={false}>
+          {Array.from({ length: 4 }).map((_, i) => <VideoSkeleton key={i} />)}
+        </ScrollView>
+      ) : (
         <FlatList
           data={videos}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
+          contentContainerStyle={s.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.mutedForeground} colors={[colors.foreground]} progressBackgroundColor={colors.card} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.6}
           ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <Banner message={error} />
-              {videos.length > 0 ? <Text style={styles.hint}>💡 Swipe a video left or right to hide it</Text> : null}
+            error || videos.length > 0 ? (
+              <View style={s.listHeader}>
+                <Alert message={error} />
+                {videos.length > 0 ? <Text style={s.hint}>💡 Bir videoyu görmek istemiyorsan sola veya sağa kaydır</Text> : null}
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View style={s.emptyWrap}>
+              <Empty icon={Video} title="No videos yet" description="Press Sync to fetch the latest videos from your subscriptions." />
             </View>
           }
-          ListEmptyComponent={<EmptyState icon="videocam-outline" title="No videos yet" description="Press Sync to fetch the latest videos from your subscriptions." />}
           ListFooterComponent={
             videos.length === 0 ? undefined : (
-              <View style={styles.footer}>
-                {loadingMore ? <ActivityIndicator color={theme.muted} /> : !hasMoreRef.current ? <Text style={styles.hint}>All videos loaded</Text> : null}
+              <View style={s.footer}>
+                {loadingMore ? (
+                  <View style={s.row}>
+                    <ActivityIndicator size="small" color={colors.mutedForeground} />
+                    <Text style={s.footerText}>Loading more videos…</Text>
+                  </View>
+                ) : !hasMoreRef.current ? <Text style={s.footerText}>All videos loaded</Text> : null}
               </View>
             )
           }
@@ -144,18 +171,48 @@ export default function VideosScreen() {
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border },
-  title: { color: theme.text, fontSize: 22, fontWeight: '800' },
-  sync: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.surfaceRaised, borderRadius: radii.control, paddingHorizontal: 12, paddingVertical: 8 },
-  syncText: { color: theme.text, fontSize: 13, fontWeight: '600' },
-  list: { padding: 16, gap: 22 },
-  listHeader: { gap: 12 },
-  hint: { color: theme.muted, fontSize: 12, textAlign: 'center' },
-  footer: { minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingBottom: 16 },
-})
+function VideoSkeleton() {
+  const s = useStyles()
+  return (
+    <View style={s.skeleton}>
+      <Skeleton style={s.skeletonThumb} />
+      <View style={s.skeletonMeta}>
+        <Skeleton style={s.skeletonAvatar} />
+        <View style={s.skeletonLines}>
+          <Skeleton style={s.skeletonLine} />
+          <Skeleton style={[s.skeletonLine, { width: '75%' }]} />
+          <Skeleton style={[s.skeletonLine, { width: '50%', height: 12 }]} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+const useStyles = makeStyles((c) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.background },
+  flex: { flex: 1 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.background },
+  filters: { gap: 6, alignItems: 'center' },
+  chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: c.muted },
+  chipActive: { backgroundColor: c.foreground },
+  chipText: { color: c.foreground, fontSize: 12, fontWeight: '500' },
+  chipTextActive: { color: c.background },
+  sync: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.sm, backgroundColor: c.muted },
+  list: { paddingHorizontal: 16, paddingVertical: 16, gap: 24 },
+  listHeader: { gap: 12, marginBottom: -12 },
+  hint: { color: c.mutedForeground, fontSize: 12, textAlign: 'center' },
+  emptyWrap: { paddingVertical: 64 },
+  footer: { minHeight: 40, alignItems: 'center', justifyContent: 'center', marginTop: 8, paddingBottom: 32 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  footerText: { color: c.mutedForeground, fontSize: 14 },
+  skeleton: { gap: 8 },
+  skeletonThumb: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.xl },
+  skeletonMeta: { flexDirection: 'row', gap: 8, paddingTop: 4 },
+  skeletonAvatar: { width: 32, height: 32, borderRadius: 16 },
+  skeletonLines: { flex: 1, gap: 6 },
+  skeletonLine: { height: 14, width: '100%' },
+}))

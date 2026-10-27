@@ -1,79 +1,89 @@
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { authClient } from '@/lib/auth-client'
 import { IS_WEB } from '@/lib/config'
-import { Banner, Button } from '@/components/ui'
-import { radii, theme } from '@/lib/theme'
+import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { makeStyles, radius, useTheme } from '@/lib/theme'
 
 // Web'deki app/auth/login/page.tsx karşılığı (+ hesap oluşturma).
 export default function LoginScreen() {
+  const { colors } = useTheme()
+  const s = useStyles()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [registering, setRegistering] = useState(false)
-  const [loading, setLoading] = useState<'google' | 'email' | null>(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleGoogleLogin() {
-    setLoading('google')
+    setLoading(true)
     setError('')
     // Tarayıcıda Google dönüşü sunucunun değil bu uygulamanın adresine yapılmalı.
     const callbackURL = IS_WEB ? window.location.origin : '/'
     const result = await authClient.signIn.social({ provider: 'google', callbackURL })
     if (result.error) setError('Unable to sign in with Google.')
-    setLoading(null)
+    setLoading(false)
   }
 
   async function handleEmail() {
-    setLoading('email')
+    setLoading(true)
     setError('')
     const result = registering
       ? await authClient.signUp.email({ email: email.trim(), password, name: name.trim() || email.split('@')[0] || 'User' })
       : await authClient.signIn.email({ email: email.trim(), password })
     if (result.error) setError(registering ? 'Unable to create account.' : 'Unable to sign in with these credentials.')
-    setLoading(null)
+    setLoading(false)
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.content}>
-        <Text style={styles.title}>OwnTube</Text>
-        <Text style={styles.subtitle}>Your private YouTube subscription feed</Text>
-
-        <View style={styles.form}>
-          <Button label="Continue with Google" icon="logo-google" variant="secondary" onPress={handleGoogleLogin} loading={loading === 'google'} disabled={loading !== null} />
-          <View style={styles.divider}>
-            <View style={styles.line} /><Text style={styles.or}>or</Text><View style={styles.line} />
-          </View>
-          <Banner message={error} />
-          {registering ? <TextInput placeholder="Name" placeholderTextColor={theme.subtle} style={styles.input} value={name} onChangeText={setName} /> : null}
-          <TextInput placeholder="Email" placeholderTextColor={theme.subtle} style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" />
-          <TextInput placeholder="Password" placeholderTextColor={theme.subtle} style={styles.input} value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
-          <Button
-            label={registering ? 'Create account' : 'Sign in'}
-            onPress={handleEmail}
-            loading={loading === 'email'}
-            disabled={loading !== null || !email || !password}
-          />
-          <Pressable onPress={() => setRegistering((value) => !value)} hitSlop={8}>
-            <Text style={styles.switch}>{registering ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
-          </Pressable>
-        </View>
+    <SafeAreaView style={s.screen}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}>
+        <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+          <Card>
+            <CardHeader style={s.center}>
+              <CardTitle style={s.title}>OwnTube</CardTitle>
+              <CardDescription style={s.centerText}>Your private YouTube subscription feed</CardDescription>
+            </CardHeader>
+            <CardContent style={s.form}>
+              <Button label="Continue with Google" variant="outline" onPress={handleGoogleLogin} disabled={loading} />
+              <View style={s.divider}>
+                <View style={s.line} /><Text style={s.or}>or</Text><View style={s.line} />
+              </View>
+              <Alert message={error} />
+              {registering ? (
+                <TextInput placeholder="Name" placeholderTextColor={colors.mutedForeground} style={s.input} value={name} onChangeText={setName} />
+              ) : null}
+              <TextInput placeholder="Email" placeholderTextColor={colors.mutedForeground} style={s.input} value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" />
+              <TextInput placeholder="Password" placeholderTextColor={colors.mutedForeground} style={s.input} value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
+              <Button
+                label={loading ? (registering ? 'Creating account...' : 'Signing in...') : registering ? 'Create account' : 'Sign in'}
+                onPress={handleEmail}
+                disabled={loading || !email || !password}
+              />
+              <Pressable onPress={() => setRegistering((value) => !value)} hitSlop={8}>
+                <Text style={s.switch}>{registering ? 'Already have an account? Sign in' : 'New here? Create an account'}</Text>
+              </Pressable>
+            </CardContent>
+          </Card>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.bg },
-  content: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { color: theme.text, fontSize: 34, fontWeight: '800', textAlign: 'center' },
-  subtitle: { color: theme.muted, fontSize: 15, textAlign: 'center', marginTop: 8 },
-  form: { gap: 12, marginTop: 36 },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: theme.border },
-  or: { color: theme.subtle, fontSize: 12 },
-  input: { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1, borderRadius: radii.control, color: theme.text, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
-  switch: { color: theme.muted, textAlign: 'center', padding: 8, fontSize: 14 },
-})
+const useStyles = makeStyles((c) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.background },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: 16 },
+  center: { alignItems: 'center' },
+  centerText: { textAlign: 'center' },
+  title: { fontSize: 30, fontWeight: '700' },
+  form: { gap: 12 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  line: { flex: 1, height: 1, backgroundColor: c.border },
+  or: { color: c.mutedForeground, fontSize: 12 },
+  input: { borderColor: c.input, borderWidth: 1, borderRadius: radius.md, backgroundColor: c.background, color: c.foreground, paddingHorizontal: 12, paddingVertical: 8, fontSize: 16 },
+  switch: { color: c.mutedForeground, textAlign: 'center', fontSize: 13, paddingTop: 4 },
+}))
