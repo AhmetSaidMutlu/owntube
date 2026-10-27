@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/logo'
 import { LogOut, Home, Video, Users, Settings, Moon, Sun } from 'lucide-react'
 
 const navItems = [
@@ -28,7 +29,8 @@ export function Navbar() {
 
         {/* Left: logo (desktop only) */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/dashboard" className="font-bold text-base">
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base">
+            <Logo className="h-6 w-6" />
             OwnTube
           </Link>
           <div className="flex items-center gap-0.5">

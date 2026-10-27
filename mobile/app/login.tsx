@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { authClient } from '@/lib/auth-client'
 import { IS_WEB } from '@/lib/config'
 import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
+import { Logo } from '@/components/Logo'
 import { makeStyles, radius, useTheme } from '@/lib/theme'
 
 // Web'deki app/auth/login/page.tsx karşılığı (+ hesap oluşturma).
@@ -43,6 +44,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
           <Card>
             <CardHeader style={s.center}>
+              <Logo size={64} />
               <CardTitle style={s.title}>OwnTube</CardTitle>
               <CardDescription style={s.centerText}>Your private YouTube subscription feed</CardDescription>
             </CardHeader>
