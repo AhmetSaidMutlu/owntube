@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "OwnTube",
+    "slug": "owntube",
+    "scheme": "owntube",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0f0f0f",
+    "ios": {
+      "bundleIdentifier": "com.owntube.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.owntube.app",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-image",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

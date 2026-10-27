@@ -1,0 +1,11 @@
+# Common ignores
+node_modules
+.next/
+.env*.local
+.DS_Store
+# Expo (mobile)
+.expo/
+dist/
+mobile/.env
+*.tsbuildinfo
+next-env.d.ts
