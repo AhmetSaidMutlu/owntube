@@ -3,7 +3,7 @@
     "name": "OwnTube",
     "slug": "owntube",
     "scheme": "owntube",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -12,10 +12,10 @@
     },
     "android": {
       "package": "com.owntube.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0a0a0a"
+        "backgroundColor": "#000000"
       }
     },
     "plugins": [
@@ -30,13 +30,14 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#000000",
           "dark": {
             "image": "./assets/splash-icon.png",
-            "backgroundColor": "#0a0a0a"
+            "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "./plugins/with-doh-dns"
     ],
     "experiments": {
       "typedRoutes": false

@@ -1,0 +1,3 @@
+# Web dağıtımı mobil uygulamayı kullanmaz; Android derleme çıktıları yüzlerce MB tutar.
+mobile/
+.env*
