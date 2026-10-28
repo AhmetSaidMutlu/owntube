@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FlatList, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Settings, Share2, type LucideIcon } from 'lucide-react-native'
 import type { RelatedVideo, Video } from '@shared/types'
 import { formatTimeAgo, orderRelated, WATCHED_AFTER_SECONDS } from '@shared/feed'
@@ -8,7 +9,6 @@ import { api } from '@/lib/api'
 import { emitVideoWatched } from '@/lib/watched-store'
 import { YouTubePlayer } from '@/components/YouTubePlayer'
 import { VideoRow } from '@/components/VideoCard'
-import { TopNav } from '@/components/TopNav'
 import { Avatar } from '@/components/ui'
 import { radius, watchColors as w } from '@/lib/theme'
 
@@ -23,6 +23,7 @@ export default function WatchScreen() {
   const [expanded, setExpanded] = useState(false)
   const [onlyChannel, setOnlyChannel] = useState(false)
   const markedRef = useRef(false)
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     if (!id) return
@@ -50,8 +51,7 @@ export default function WatchScreen() {
 
   if (!video) {
     return (
-      <View style={styles.screen}>
-        <TopNav />
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
         <View style={styles.loading}><Text style={styles.loadingText}>Loading...</Text></View>
       </View>
     )
@@ -66,8 +66,7 @@ export default function WatchScreen() {
   const shortChannel = channelTitle.length > 20 ? `${channelTitle.slice(0, 20)}…` : channelTitle
 
   return (
-    <View style={styles.screen}>
-      <TopNav />
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View>
         <YouTubePlayer videoId={video.videoId} onPlaySecond={onPlaySecond} />
         <Pressable onPress={() => router.back()} style={styles.back} hitSlop={10} accessibilityLabel="Go back">
@@ -78,7 +77,7 @@ export default function WatchScreen() {
       <FlatList
         data={related}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 32 + insets.bottom }]}
         onEndReached={() => visible < filtered.length && setVisible((n) => n + RELATED_PAGE_SIZE)}
         onEndReachedThreshold={0.5}
         ListHeaderComponent={

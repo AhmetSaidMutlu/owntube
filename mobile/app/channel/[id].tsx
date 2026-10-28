@@ -119,7 +119,7 @@ export default function ChannelScreen() {
         <FlatList
           data={videos}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={s.list}
+          contentContainerStyle={[s.list, { paddingBottom: 16 + insets.bottom }]}
           ListHeaderComponent={error ? <Alert message={error} /> : null}
           ListEmptyComponent={error ? null : <Text style={s.empty}>No videos found for this channel. Try syncing first.</Text>}
           renderItem={({ item }) => <VideoCard video={item} />}
