@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { CircleCheck, Play, RefreshCw, Settings, Users, type LucideIcon } from 'lucide-react-native'
 import type { YoutubeStatusResponse } from '@shared/types'
 import { api, syncErrorMessage } from '@/lib/api'
 import { useYoutubeConnect } from '@/lib/use-youtube-connect'
+import { onVideosSynced } from '@/lib/watched-store'
 import { Alert, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, LoadingText } from '@/components/ui'
 import { makeStyles, useTheme } from '@/lib/theme'
 
@@ -27,6 +28,7 @@ export default function DashboardScreen() {
   }, [])
 
   useFocusEffect(useCallback(() => { loadStatus() }, [loadStatus]))
+  useEffect(() => onVideosSynced(() => { loadStatus() }), [loadStatus])
 
   const syncVideos = useCallback(async () => {
     setSyncing(true)

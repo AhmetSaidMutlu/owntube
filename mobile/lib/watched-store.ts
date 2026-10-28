@@ -1,5 +1,5 @@
 // Ekranlar arası küçük olay kanalı: izleme ekranında "izlendi" işaretlenen ya da
-// akıştan kaydırılarak gizlenen videoları liste ekranları anında yansıtır.
+// akıştan kaydırılarak gizlenen videoları ve yeni senkronizasyonları liste ekranları anında yansıtır.
 
 type Listener = (videoId: string) => void
 
@@ -15,4 +15,16 @@ export function onVideoWatched(listener: Listener) {
 
 export function emitVideoWatched(videoId: string) {
   watchedListeners.forEach((listener) => listener(videoId))
+}
+
+// Üst çubuktaki Sync düğmesi senkronizasyon bitince video listesini yeniler.
+const syncedListeners = new Set<() => void>()
+
+export function onVideosSynced(listener: () => void) {
+  syncedListeners.add(listener)
+  return () => { syncedListeners.delete(listener) }
+}
+
+export function emitVideosSynced() {
+  syncedListeners.forEach((listener) => listener())
 }

@@ -1,30 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { WebView, type WebViewMessageEvent } from 'react-native-webview'
+import { API_URL } from '@/lib/config'
 
-// YouTube IFrame API'si WebView içinde çalışır; oynatma durumu postMessage ile RN tarafına iletilir.
-// baseUrl, YouTube'un gömülü oynatıcı için istediği geçerli bir köken (referrer) sağlar.
-const BASE_URL = 'https://www.youtube.com'
-
-function playerHtml(videoId: string) {
-  return `<!doctype html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#player{width:100%;height:100%}</style>
-</head><body><div id="player"></div>
-<script src="https://www.youtube.com/iframe_api"></script>
-<script>
-function post(data){window.ReactNativeWebView.postMessage(JSON.stringify(data))}
-function onYouTubeIframeAPIReady(){
-  new YT.Player('player',{videoId:${JSON.stringify(videoId)},
-    playerVars:{autoplay:1,playsinline:1,rel:0,modestbranding:1,origin:${JSON.stringify(BASE_URL)}},
-    events:{
-      onReady:function(e){e.target.playVideo()},
-      onStateChange:function(e){post({type:'state',playing:e.data===1})},
-      onError:function(e){post({type:'error',code:e.data})}
-    }})
-}
-</script></body></html>`
-}
+// Oynatıcı sayfası sunucudan (/embed/[id]) yüklenir: YouTube gömülü oynatıcıyı yalnızca gerçek bir
+// web kökeninden açılınca çalıştırıyor, WebView'a verilen yerel HTML'de 152/153 hatası veriyordu.
+// Oynatma durumu sayfadan postMessage ile RN tarafına iletilir.
 
 /** Oynatma süresini saniye saniye bildirir (yalnızca video oynarken). */
 export function YouTubePlayer({ videoId, onPlaySecond }: { videoId: string; onPlaySecond?: (seconds: number) => void }) {
@@ -55,7 +36,7 @@ export function YouTubePlayer({ videoId, onPlaySecond }: { videoId: string; onPl
     <View style={styles.container}>
       <WebView
         key={videoId}
-        source={{ html: playerHtml(videoId), baseUrl: BASE_URL }}
+        source={{ uri: `${API_URL}/embed/${encodeURIComponent(videoId)}` }}
         style={styles.webview}
         onMessage={onMessage}
         allowsInlineMediaPlayback
@@ -64,7 +45,6 @@ export function YouTubePlayer({ videoId, onPlaySecond }: { videoId: string; onPl
         javaScriptEnabled
         scrollEnabled={false}
         bounces={false}
-        originWhitelist={['*']}
       />
     </View>
   )

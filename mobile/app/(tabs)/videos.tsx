@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { RefreshCw, Video } from 'lucide-react-native'
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Video } from 'lucide-react-native'
 import { smartSort } from '@shared/feed'
-import { api, syncErrorMessage } from '@/lib/api'
-import { dismissedVideoIds, onVideoWatched } from '@/lib/watched-store'
+import { api } from '@/lib/api'
+import { dismissedVideoIds, onVideoWatched, onVideosSynced } from '@/lib/watched-store'
 import { VideoCard, type FeedVideo } from '@/components/VideoCard'
 import { SwipeToDismiss } from '@/components/SwipeToDismiss'
-import { Alert, Empty, Skeleton, Spin } from '@/components/ui'
+import { Alert, Empty, Skeleton } from '@/components/ui'
 import { makeStyles, radius, useTheme } from '@/lib/theme'
 
 const PAGE_SIZE = 20
-const FILTERS = ['All', 'Gaming', 'Music', 'News', 'Live', 'Tech', 'Sports']
 
 // Web'deki app/(protected)/videos/page.tsx karşılığı: akıllı sıralama, sonsuz kaydırma,
 // aşağı çekerek yenileme, kaydırarak gizleme.
@@ -21,9 +20,7 @@ export default function VideosScreen() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState('')
-  const [activeFilter, setActiveFilter] = useState('all')
 
   const pageRef = useRef(0)
   const hasMoreRef = useRef(true)
@@ -83,18 +80,8 @@ export default function VideosScreen() {
     setRefreshing(false)
   }
 
-  async function onSync() {
-    setSyncing(true)
-    setError('')
-    try {
-      await api.sync()
-      await reload()
-    } catch (err) {
-      setError(syncErrorMessage(err))
-    } finally {
-      setSyncing(false)
-    }
-  }
+  // Üst çubuktaki Sync düğmesi bitince akış yeniden yüklenir.
+  useEffect(() => onVideosSynced(() => { reload() }), [reload])
 
   async function onEndReached() {
     if (!hasMoreRef.current || fetchingRef.current || loading) return
@@ -110,23 +97,6 @@ export default function VideosScreen() {
 
   return (
     <View style={s.screen}>
-      {/* Filtre çubuğu + Sync düğmesi */}
-      <View style={s.filterBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters} style={s.flex}>
-          {FILTERS.map((filter) => {
-            const active = activeFilter === filter.toLowerCase()
-            return (
-              <Pressable key={filter} onPress={() => setActiveFilter(filter.toLowerCase())} style={[s.chip, active && s.chipActive]}>
-                <Text style={[s.chipText, active && s.chipTextActive]}>{filter}</Text>
-              </Pressable>
-            )
-          })}
-        </ScrollView>
-        <Pressable onPress={onSync} disabled={syncing || refreshing} style={({ pressed }) => [s.sync, (pressed || syncing) && { opacity: 0.5 }]} accessibilityLabel="Sync latest videos from YouTube">
-          <Spin icon={RefreshCw} size={14} color={colors.foreground} spinning={syncing} />
-        </Pressable>
-      </View>
-
       {loading ? (
         <ScrollView contentContainerStyle={s.list} scrollEnabled={false}>
           {Array.from({ length: 4 }).map((_, i) => <VideoSkeleton key={i} />)}
@@ -194,14 +164,6 @@ function VideoSkeleton() {
 
 const useStyles = makeStyles((c) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.background },
-  flex: { flex: 1 },
-  filterBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.background },
-  filters: { gap: 6, alignItems: 'center' },
-  chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: c.muted },
-  chipActive: { backgroundColor: c.foreground },
-  chipText: { color: c.foreground, fontSize: 12, fontWeight: '500' },
-  chipTextActive: { color: c.background },
-  sync: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.sm, backgroundColor: c.muted },
   list: { paddingHorizontal: 16, paddingVertical: 16, gap: 24 },
   listHeader: { gap: 12, marginBottom: -12 },
   hint: { color: c.mutedForeground, fontSize: 12, textAlign: 'center' },
